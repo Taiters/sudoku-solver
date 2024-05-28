@@ -1,0 +1,14 @@
+version: "2"
+services:
+  notebook:
+    hostname: 0.0.0.0
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: "jupyter lab --ip 0.0.0.0 --NotebookApp.token='' --NotebookApp.password=''"
+    volumes:
+      - ./notebooks:/notebooks
+    ports:
+      - 8888:8888
+      - 40000:40000
+
