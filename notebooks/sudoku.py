@@ -11,7 +11,7 @@ def _solve_impl(grid, rows, cols, blocks, idx=0):
     col = cols[x]
     block = blocks[y//3][x//3]
 
-    for value in range(10):
+    for value in range(1, 10):
         if value in row or value in col or value in block:
             continue
 
@@ -45,6 +45,8 @@ def solve(grid):
                 "value": val
             })
             if val is not None:
+                if val in rows[y] or val in cols[x] or val in blocks[y//3][x//3]:
+                    raise ValueError("Grid is invalid")
                 rows[y].add(val)
                 cols[x].add(val)
                 blocks[y//3][x//3].add(val)
