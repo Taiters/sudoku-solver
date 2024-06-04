@@ -1,14 +1,21 @@
-version: "2"
+version: "2.3"
 services:
   notebook:
     hostname: 0.0.0.0
     build:
       context: .
       dockerfile: Dockerfile
-    command: "jupyter lab --ip 0.0.0.0 --NotebookApp.token='' --NotebookApp.password=''"
+    command: "jupyter lab --allow-root --ip 0.0.0.0 --NotebookApp.token='' --NotebookApp.password=''"
     volumes:
       - ./notebooks:/notebooks
     ports:
       - 8888:8888
       - 40000:40000
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
