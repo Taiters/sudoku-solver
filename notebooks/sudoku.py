@@ -26,7 +26,7 @@ def _solve_impl(grid, rows, cols, blocks, idx=0):
         row.remove(value)
         col.remove(value)
         block.remove(value)
-    grid[y][x]["value"] = None
+    grid[y][x]["value"] = 0
     return False
 
 
@@ -41,10 +41,10 @@ def solve(grid):
     for y, row in enumerate(grid):
         for x, val in enumerate(row):
             prepared_grid[y].append({
-                "locked": val is not None,
+                "locked": val != 0,
                 "value": val
             })
-            if val is not None:
+            if val != 0:
                 if val in rows[y] or val in cols[x] or val in blocks[y//3][x//3]:
                     raise ValueError("Grid is invalid")
                 rows[y].add(val)
