@@ -195,15 +195,19 @@ def overlay(image, digits):
     return cv2.addWeighted(digits, 1, image_alpha, 1, 0)
 
 
-def overlay_solution(img, last_solution=None):
+def overlay_solution(img, last_solution=None, show_interim_stages=False):
     binary = convert_to_binary(img)
-    cv2.imshow("binary", binary)
+    if show_interim_stages:
+        cv2.imshow("binary", binary)
+
     corners = get_sudoku_corners(binary)
     if corners is None:
         return img, None
+
     sudoku_grid_img = get_image_region(binary, corners)
     cleaned = clean_grid(sudoku_grid_img)
-    cv2.imshow("cleaned", cleaned)
+    if show_interim_stages:
+        cv2.imshow("cleaned", cleaned)
 
     cells = get_cells(cleaned)
     orientation = predict_orientation(cells)
@@ -217,26 +221,17 @@ def overlay_solution(img, last_solution=None):
         cells = get_cells(cv2.rotate(cleaned, fix_rotation))
     digits = predict_digits(cells).reshape(9, 9)
 
-    for r, row in enumerate(digits):
-        for c, v in enumerate(row):
-            print(f"{v} " if v is not None else "  ", end="")
-            if (c + 1) % 3 == 0:
-                print("| ", end="")
-        print("")
-        if (r + 1) % 3 == 0:
-            print(f"{'-'*6}|-" * 3)
-
     solution = last_solution
     try:
         solution = sudoku.solve(digits)
-        print(solution)
     except ValueError as e:
         pass
 
     mask = get_solution_mask(solution)
-    if solution is not None:
-        cv2.imshow("solution", cv2.resize(mask, (300, 300)))
     positioned_mask = undo_transform(mask, fix_rotation, corners, img)
+    if solution is not None and show_interim_stages:
+        cv2.imshow("solution", positioned_mask)
+
     return overlay(img, positioned_mask), solution
 
 
@@ -246,7 +241,7 @@ if __name__ == "__main__":
     while True:
         ret, frame = vid.read()
 
-        result, solution = overlay_solution(frame, solution)
+        result, solution = overlay_solution(frame, solution, True)
         cv2.imshow("frame", result)
 
         if cv2.waitKey(1) & 0xFF == ord("q"):
