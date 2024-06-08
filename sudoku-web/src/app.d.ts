@@ -10,4 +10,6 @@ declare global {
 	}
 }
 
-export {};
+declare interface Window {
+	cv: any;
+}
