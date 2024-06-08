@@ -8,7 +8,7 @@
 		requestingStream = true;
 		deniedPermission = false;
 		try {
-			$cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+			$cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
 		} catch {
 			deniedPermission = true;
 		} finally {
