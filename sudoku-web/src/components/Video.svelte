@@ -2,13 +2,17 @@
 	import { overlaySolution } from "$lib/processor";
 	import { cameraStream } from "$lib/store";
 	import { onMount } from "svelte";
+    import * as tf from "@tensorflow/tfjs";
+	import OpenCvLoader from "./OpenCVLoader.svelte";
 
     let canvasElement: HTMLCanvasElement;
     let videoElement: HTMLVideoElement;
+    let loadedOpenCV = false;
+    let loadedModels = false;
 
-    const cv = window.cv;
+    $: loaded = loadedOpenCV && loadedModels;
 
-    onMount(() => {
+    onMount(async () => {
         const ctx = canvasElement.getContext('2d', {willReadFrequently: true});
         videoElement.onloadedmetadata = () => {
             videoElement.play();
@@ -22,7 +26,10 @@
             }
 
             ctx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
-            overlaySolution(window.cv, ctx);
+
+            if (loaded) {
+                overlaySolution(window.cv, ctx);
+            }
 
             videoElement.requestVideoFrameCallback(updateCanvas);
         }
@@ -33,5 +40,12 @@
     $: videoElement && (videoElement.srcObject = $cameraStream);
 </script>
 
+<OpenCvLoader on:loaded={() => loadedOpenCV = true}/>
 <video bind:this={videoElement} hidden />
-<canvas bind:this={canvasElement} id="output" class="w-full"/>
+<canvas bind:this={canvasElement} id="output" class="w-full" />
+{#if !loaded}
+    <div class="text-center absolute text-primary text-lg">
+        <span class="loading loading-spinner loading-lg" />
+        <p>Loading</p>
+    </div>
+{/if}

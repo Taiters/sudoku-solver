@@ -36,6 +36,7 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"@tensorflow/tfjs": "^4.20.0",
 		"daisyui": "^4.12.2"
 	}
 }
