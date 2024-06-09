@@ -1,0 +1,16 @@
+# 2.16 / keras 3 doesn't seem to play nice with tensorflowjs
+# ...It looks like tensorflow is still pulls in tensorflow 2.16.0, but
+# the conversion worked so I'm not touching anything else...
+FROM tensorflow/tensorflow:2.15.0-gpu
+
+WORKDIR /notebooks
+
+RUN apt-get update && apt-get install ffmpeg libsm6 libxext6 tesseract-ocr -y &&\
+    pip install \
+    jupyterlab \
+    matplotlib \
+    opencv-python \
+    pandas \
+    # keras \
+    pytesseract \
+    tensorflowjs

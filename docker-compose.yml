@@ -4,7 +4,7 @@ services:
     hostname: 0.0.0.0
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.notebook
     command: "jupyter lab --allow-root --ip 0.0.0.0 --NotebookApp.token='' --NotebookApp.password=''"
     volumes:
       - ./notebooks:/notebooks
