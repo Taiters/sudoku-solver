@@ -13,5 +13,6 @@ RUN apt-get update && apt-get install ffmpeg libsm6 libxext6 tesseract-ocr -y &&
     pandas \
     pytesseract
 
-# Include this to do model conversion for tfjs
+# Include this to do model conversion for tfjs... I'd love to just be able
+# to train with this, but I'm having errors and this weird approach works...
 RUN pip install tensorflow==2.15.0 tensorflowjs==4.17
