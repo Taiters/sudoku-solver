@@ -7,12 +7,20 @@
 
     let canvasElement: HTMLCanvasElement;
     let videoElement: HTMLVideoElement;
-    let loadedOpenCV = false;
-    let loadedModels = false;
 
-    $: loaded = loadedOpenCV && loadedModels;
+    let digitsModel: tf.LayersModel;
+    let orientationModel: tf.LayersModel;
+
+    let loadedOpenCV = false;
 
     onMount(async () => {
+        (async () => {
+            [digitsModel, orientationModel] = await Promise.all<tf.LayersModel>([
+                tf.loadLayersModel('/models/digits_9967_0100_1717968332/model.json'),
+                tf.loadLayersModel('/models/orientations_9027_2061_1717970078/model.json'),
+            ]);
+        })();
+
         const ctx = canvasElement.getContext('2d', {willReadFrequently: true});
         videoElement.onloadedmetadata = () => {
             videoElement.play();
@@ -38,6 +46,8 @@
     });
 
     $: videoElement && (videoElement.srcObject = $cameraStream);
+    $: loadedModels = digitsModel != null && orientationModel != null;
+    $: loaded = loadedOpenCV && loadedModels;
 </script>
 
 <OpenCvLoader on:loaded={() => loadedOpenCV = true}/>
