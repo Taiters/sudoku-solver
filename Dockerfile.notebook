@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install ffmpeg libsm6 libxext6 tesseract-ocr -y &&
     matplotlib \
     opencv-python \
     pandas \
-    # keras \
-    pytesseract \
-    tensorflowjs
+    pytesseract
+
+# Include this to do model conversion for tfjs
+RUN pip install tensorflow==2.15.0 tensorflowjs==4.17
