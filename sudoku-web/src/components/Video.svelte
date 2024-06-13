@@ -13,6 +13,8 @@
 
     let loadedOpenCV = false;
 
+    window.tf = tf;
+
     onMount(async () => {
         (async () => {
             [digitsModel, orientationModel] = await Promise.all<tf.LayersModel>([
@@ -28,7 +30,7 @@
             canvasElement.height = videoElement.videoHeight;
         }
 
-        const updateCanvas: VideoFrameRequestCallback = (now, metadata) => {
+        const updateCanvas: VideoFrameRequestCallback = async (now, metadata) => {
             if (ctx == null) {
                 return;
             }
@@ -36,7 +38,7 @@
             ctx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
 
             if (loaded) {
-                overlaySolution(window.cv, ctx);
+                let solution = await overlaySolution(window.cv, ctx, digitsModel);
             }
 
             videoElement.requestVideoFrameCallback(updateCanvas);

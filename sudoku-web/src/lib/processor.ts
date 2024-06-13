@@ -1,3 +1,6 @@
+import * as tf from "@tensorflow/tfjs";
+
+
 function convertToBinary(cv: any, input: any, output: any) {
     cv.cvtColor(input, output, cv.COLOR_BGR2GRAY);
     cv.threshold(output, output, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)
@@ -133,7 +136,6 @@ function getImageRegion(cv: any, image: any, output: any, points: number[][], si
     }
 }
 
-let first = false;
 function cleanGrid(cv: any, image: any) {
     const color = new cv.Scalar(255, 255, 255, 255);
     const lines = new cv.Mat();
@@ -150,17 +152,13 @@ function cleanGrid(cv: any, image: any) {
         image.convertTo(image, cv.CV_32F);
         cv.bitwise_not(mask, mask);
         cv.bitwise_and(mask, image, image);
-
-        cv.imshow('test-region', image);
-        cv.imshow('test-roi', mask);
     } finally {
         lines.delete();
         mask.delete();
     }
 }
 
-
-export function overlaySolution(cv: any, ctx: CanvasRenderingContext2D) {
+export async function overlaySolution(cv: any, ctx: CanvasRenderingContext2D, digitsModel: tf.LayersModel) {
     let image;
 
     // TODO: Could probably keep these around for the entire lifetime rather than
@@ -188,8 +186,24 @@ export function overlaySolution(cv: any, ctx: CanvasRenderingContext2D) {
         cv.imshow(ctx.canvas.id, image);
         // cv.imshow('test-region', sudokuRegion);
 
-        // const r = sudokuRegion.roi(new cv.Rect(0, 0, 28, 28));
-        // cv.imshow('test-roi', r);
+        const r = sudokuRegion.roi(new cv.Rect(0, 0, 28, 28));
+        const t = tf.tensor(r.data32F, [1, 28, 28, 1]);
+
+        const out = digitsModel.predict(t) as tf.Tensor<tf.Rank>;
+        t.dispose();
+
+        const argmax = (await out.argMax(1).data())[0];
+        const data = await out.data();
+        out.dispose();
+
+
+
+        cv.imshow('test-roi', r);
+        const conf = data[argmax];
+        debugger;
+        if (conf > 0.8) {
+            return argmax;
+        }
     } finally {
         image?.delete();
         binary.delete();
