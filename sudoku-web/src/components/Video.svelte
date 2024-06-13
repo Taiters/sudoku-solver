@@ -53,6 +53,8 @@
 <OpenCvLoader on:loaded={() => loadedOpenCV = true}/>
 <video bind:this={videoElement} hidden />
 <canvas bind:this={canvasElement} id="output" class="w-full" />
+<canvas id="test-region"/>
+<canvas id="test-roi"/>
 {#if !loaded}
     <div class="text-center absolute text-primary text-lg">
         <span class="loading loading-spinner loading-lg" />

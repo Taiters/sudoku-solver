@@ -83,13 +83,11 @@ function sortPointsClockwise(points: number[][]): number[][] {
     ];
 }
 
-
 function getSudokuCorners(cv: any, input: any): number[][] | null {
     const imgSize = input.size();
     const contours = new cv.MatVector();
     const quads = new cv.MatVector();
     const central = new cv.MatVector();
-
 
     try {
         getContours(cv, input, contours);
@@ -135,6 +133,33 @@ function getImageRegion(cv: any, image: any, output: any, points: number[][], si
     }
 }
 
+let first = false;
+function cleanGrid(cv: any, image: any) {
+    const color = new cv.Scalar(255, 255, 255, 255);
+    const lines = new cv.Mat();
+    const mask = cv.Mat.zeros(252, 252, cv.CV_32FC1);
+
+    try {
+        cv.HoughLinesP(image, lines, 1, Math.PI / 2, 50, 60, 5);
+        for (let i = 0; i < lines.rows; i++) {
+            const startPoint = new cv.Point(lines.data32S[i * 4], lines.data32S[i * 4 + 1]);
+            const endPoint = new cv.Point(lines.data32S[i * 4 + 2], lines.data32S[i * 4 + 3]);
+            cv.line(mask, startPoint, endPoint, color, 2);
+        }
+
+        image.convertTo(image, cv.CV_32F);
+        cv.bitwise_not(mask, mask);
+        cv.bitwise_and(mask, image, image);
+
+        cv.imshow('test-region', image);
+        cv.imshow('test-roi', mask);
+    } finally {
+        lines.delete();
+        mask.delete();
+    }
+}
+
+
 export function overlaySolution(cv: any, ctx: CanvasRenderingContext2D) {
     let image;
 
@@ -158,8 +183,13 @@ export function overlaySolution(cv: any, ctx: CanvasRenderingContext2D) {
         }
 
         getImageRegion(cv, binary, sudokuRegion, corners);
+        cleanGrid(cv, sudokuRegion);
 
         cv.imshow(ctx.canvas.id, image);
+        // cv.imshow('test-region', sudokuRegion);
+
+        // const r = sudokuRegion.roi(new cv.Rect(0, 0, 28, 28));
+        // cv.imshow('test-roi', r);
     } finally {
         image?.delete();
         binary.delete();
