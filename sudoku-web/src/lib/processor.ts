@@ -137,9 +137,9 @@ function getImageRegion(cv: any, image: any, output: any, points: number[][], si
 }
 
 function cleanGrid(cv: any, image: any) {
-    const color = new cv.Scalar(255, 255, 255, 255);
+    const color = new cv.Scalar(255);
     const lines = new cv.Mat();
-    const mask = cv.Mat.zeros(252, 252, cv.CV_32FC1);
+    const mask = cv.Mat.zeros(252, 252, cv.CV_8U);
 
     try {
         cv.HoughLinesP(image, lines, 1, Math.PI / 2, 50, 60, 5);
@@ -149,7 +149,7 @@ function cleanGrid(cv: any, image: any) {
             cv.line(mask, startPoint, endPoint, color, 2);
         }
 
-        image.convertTo(image, cv.CV_32F);
+        // image.convertTo(image, cv.CV_32F);
         cv.bitwise_not(mask, mask);
         cv.bitwise_and(mask, image, image);
     } finally {
@@ -158,7 +158,7 @@ function cleanGrid(cv: any, image: any) {
     }
 }
 
-export async function overlaySolution(cv: any, ctx: CanvasRenderingContext2D, digitsModel: tf.LayersModel) {
+export async function overlaySolution(cv: any, ctx: CanvasRenderingContext2D, digitsModel: tf.LayersModel): Promise<number | null> {
     let image;
 
     // TODO: Could probably keep these around for the entire lifetime rather than
@@ -172,7 +172,7 @@ export async function overlaySolution(cv: any, ctx: CanvasRenderingContext2D, di
 
         if (!corners) {
             cv.imshow(ctx.canvas.id, image);
-            return;
+            return null;
         }
 
         for (const corner of corners) {
@@ -184,26 +184,32 @@ export async function overlaySolution(cv: any, ctx: CanvasRenderingContext2D, di
         cleanGrid(cv, sudokuRegion);
 
         cv.imshow(ctx.canvas.id, image);
-        // cv.imshow('test-region', sudokuRegion);
 
         const r = sudokuRegion.roi(new cv.Rect(0, 0, 28, 28));
-        const t = tf.tensor(r.data32F, [1, 28, 28, 1]);
+        // An ROI is basically a view on the original data, it's not continious in memory,
+        // so we can't simply pass its data to a tensor... So just clone it to get a clone
+        // which IS continuous.
+        const cloned = r.clone();
 
-        const out = digitsModel.predict(t) as tf.Tensor<tf.Rank>;
-        t.dispose();
+        cv.imshow('test-region', sudokuRegion);
+        cv.imshow('test-roi', r);
+
+        const t = tf.tensor(cloned.data, [1, 28, 28, 1]);
+        const scaled = t.div(tf.scalar(255));
+
+        const out = digitsModel.predict(scaled) as tf.Tensor<tf.Rank>;
+        // t.dispose();
+        // scaled.dispose();
 
         const argmax = (await out.argMax(1).data())[0];
         const data = await out.data();
         out.dispose();
 
-
-
-        cv.imshow('test-roi', r);
         const conf = data[argmax];
-        debugger;
         if (conf > 0.8) {
             return argmax;
         }
+        return null;
     } finally {
         image?.delete();
         binary.delete();

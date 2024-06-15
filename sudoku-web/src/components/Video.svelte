@@ -10,6 +10,7 @@
 
     let digitsModel: tf.LayersModel;
     let orientationModel: tf.LayersModel;
+    let solution: number | null;;
 
     let loadedOpenCV = false;
 
@@ -38,7 +39,7 @@
             ctx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
 
             if (loaded) {
-                let solution = await overlaySolution(window.cv, ctx, digitsModel);
+                solution = await overlaySolution(window.cv, ctx, digitsModel);
             }
 
             videoElement.requestVideoFrameCallback(updateCanvas);
@@ -57,6 +58,11 @@
 <canvas bind:this={canvasElement} id="output" class="w-full" />
 <canvas id="test-region"/>
 <canvas id="test-roi"/>
+{#if solution}
+    <p>It's a {solution} mate</p>
+{:else}
+    <p>I've honestly no idea mate</p>
+{/if}
 {#if !loaded}
     <div class="text-center absolute text-primary text-lg">
         <span class="loading loading-spinner loading-lg" />
