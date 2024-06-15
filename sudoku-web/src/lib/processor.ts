@@ -194,6 +194,18 @@ export async function overlaySolution(cv: any, ctx: CanvasRenderingContext2D, di
         cv.imshow('test-region', sudokuRegion);
         cv.imshow('test-roi', r);
 
+        // If only it was this simple...
+        // const testTensors = tf.tensor(sudokuRegion.data, [9*9, 28, 28, 1]).div(tf.scalar(255));
+        // const testOut = digitsModel.predict(testTensors) as tf.Tensor<tf.Rank>
+        // debugger;
+
+        // ...Maybe tf.split - It works!
+        const initialTensor = tf.tensor(sudokuRegion.data, [252, 252]).div(tf.scalar(255));
+        const tensors = tf.split(initialTensor, 9, 0).flatMap(col => tf.split(col, 9, 1));
+        const merged = tf.concat(tensors).reshape([-1, 28, 28, 1]);
+        const testOut = digitsModel.predict(merged, {batchSize: 81}) as tf.Tensor<tf.Rank>
+        debugger;
+
         const t = tf.tensor(cloned.data, [1, 28, 28, 1]);
         const scaled = t.div(tf.scalar(255));
 

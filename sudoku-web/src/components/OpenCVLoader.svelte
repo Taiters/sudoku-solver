@@ -1,15 +1,18 @@
 <script>
 	import { createEventDispatcher } from "svelte";
 
-    if (!document.getElementById('opencv_script')) {
+    const SCRIPT_ID = 'opencv_script';
+    const PATH = '/opencv.js';
+
+    if (!document.getElementById(SCRIPT_ID)) {
         const dispatch = createEventDispatcher();
 
         const openCVScript = document.createElement('script');
 
-        openCVScript.id = 'opencv_script';
+        openCVScript.id = SCRIPT_ID;
+        openCVScript.setAttribute('src', PATH);
         openCVScript.setAttribute('defer', '');
         openCVScript.setAttribute('type', 'text/javascript');
-        openCVScript.setAttribute('src', '/opencv.js');
 
         openCVScript.onload = () => {
             // Seems there can be a delay between loaded and
