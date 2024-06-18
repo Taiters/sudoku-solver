@@ -4,6 +4,7 @@
 	import { onMount } from "svelte";
     import * as tf from "@tensorflow/tfjs";
 	import OpenCvLoader from "./OpenCVLoader.svelte";
+	import { SudokuFrameProcessor } from "$lib/core/processor";
 
     let canvasElement: HTMLCanvasElement;
     let videoElement: HTMLVideoElement;
@@ -38,8 +39,10 @@
 
             ctx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
 
-            if (loaded) {
-                solution = await overlaySolution(window.cv, ctx, digitsModel);
+            if (frameProcessor) {
+                const frame = ctx.getImageData(0, 0, canvasElement.width, canvasElement.height).data;
+                frameProcessor.processFrame(new Uint8Array(frame.buffer));
+                // solution = await overlaySolution(window.cv, ctx, digitsModel);
             }
 
             videoElement.requestVideoFrameCallback(updateCanvas);
@@ -48,6 +51,7 @@
         videoElement.requestVideoFrameCallback(updateCanvas);
     });
 
+    $: frameProcessor = loaded ? new SudokuFrameProcessor(window.cv, canvasElement.width, canvasElement.height) : null;
     $: videoElement && (videoElement.srcObject = $cameraStream);
     $: loadedModels = digitsModel != null && orientationModel != null;
     $: loaded = loadedOpenCV && loadedModels;
