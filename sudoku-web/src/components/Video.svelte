@@ -5,13 +5,15 @@
     import * as tf from "@tensorflow/tfjs";
 	import OpenCvLoader from "./OpenCVLoader.svelte";
 	import { SudokuFrameProcessor } from "$lib/core/processor";
+	import { SudokuPredictor } from "$lib/core/predictor";
 
     let canvasElement: HTMLCanvasElement;
     let videoElement: HTMLVideoElement;
 
     let digitsModel: tf.LayersModel;
     let orientationModel: tf.LayersModel;
-    let solution: number | null;;
+    let solution: number | null;
+    let grid: number[][] | null;
 
     let loadedOpenCV = false;
 
@@ -41,8 +43,15 @@
 
             if (frameProcessor) {
                 const frame = ctx.getImageData(0, 0, canvasElement.width, canvasElement.height).data;
-                frameProcessor.processFrame(new Uint8Array(frame.buffer));
-                // solution = await overlaySolution(window.cv, ctx, digitsModel);
+                const result = frameProcessor.processFrame(new Uint8Array(frame.buffer));
+
+                if (result) {
+                    solution = result.orientation;
+                    grid = result.sudokuGrid;
+                } else {
+                    solution = null;
+                    grid = null;
+                }
             }
 
             videoElement.requestVideoFrameCallback(updateCanvas);
@@ -51,7 +60,7 @@
         videoElement.requestVideoFrameCallback(updateCanvas);
     });
 
-    $: frameProcessor = loaded ? new SudokuFrameProcessor(window.cv, canvasElement.width, canvasElement.height) : null;
+    $: frameProcessor = loaded ? new SudokuFrameProcessor(window.cv, canvasElement.width, canvasElement.height, new SudokuPredictor(digitsModel, orientationModel)) : null;
     $: videoElement && (videoElement.srcObject = $cameraStream);
     $: loadedModels = digitsModel != null && orientationModel != null;
     $: loaded = loadedOpenCV && loadedModels;
@@ -62,10 +71,15 @@
 <canvas bind:this={canvasElement} id="output" class="w-full" />
 <canvas id="test-region"/>
 <canvas id="test-roi"/>
-{#if solution}
+{#if solution != null}
     <p>It's a {solution} mate</p>
 {:else}
     <p>I've honestly no idea mate</p>
+{/if}
+{#if grid != null}
+    {#each grid as row}
+        {row.join(' ')}<br/>
+    {/each}
 {/if}
 {#if !loaded}
     <div class="text-center absolute text-primary text-lg">
