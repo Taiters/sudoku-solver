@@ -1,10 +1,11 @@
 import * as tf from '@tensorflow/tfjs';
+import type { SudokuGrid } from './sudoku';
 
 // Could probably put this sort of type somewhere more suitable
 export type Orientation = 0 | 90 | 180 | 270;
 export type SudokuPredictorResult = {
     orientation: Orientation;
-    sudokuGrid: number[][];
+    sudokuGrid: SudokuGrid;
 };
 
 export type SudokuPredictorOptions = {
@@ -41,15 +42,17 @@ export class SudokuPredictor {
     }
 
     predict(data: Uint8Array): SudokuPredictorResult {
-        const sudokuTensor = tf.tensor(data, [252, 252]).div(tf.scalar(255));
-        const orientation = this.predictOrientation(sudokuTensor);
-        const fixed = this.fixRotation(sudokuTensor, orientation);
-        const sudokuGrid = this.predictSudokuDigits(fixed);
+        return tf.tidy<SudokuPredictorResult>(() => {
+            const sudokuTensor = tf.tensor(data, [252, 252]).div(tf.scalar(255));
+            const orientation = this.predictOrientation(sudokuTensor);
+            const fixed = this.fixRotation(sudokuTensor, orientation);
+            const sudokuGrid = this.predictSudokuDigits(fixed);
 
-        return {
-            orientation,
-            sudokuGrid
-        };
+            return {
+                orientation,
+                sudokuGrid
+            };
+        });
     }
 
     private fixRotation(image: tf.Tensor, orientation: Orientation): tf.Tensor {

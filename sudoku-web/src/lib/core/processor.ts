@@ -1,11 +1,11 @@
 import type { Mat, MatVector, Scalar } from 'opencv-ts';
 import type openCV from 'opencv-ts';
 import type { Orientation, SudokuPredictor } from './predictor';
-import { scalar, tensor } from '@tensorflow/tfjs';
+import type { SudokuGrid } from './sudoku';
 
 export type SudokuFrameData = {
     coordinates: number[][];
-    sudokuGrid: number[][];
+    sudokuGrid: SudokuGrid;
     orientation: Orientation;
 };
 
@@ -182,8 +182,6 @@ export class SudokuFrameProcessor {
         }
         this.cv.bitwise_not(mask, mask);
         this.cv.bitwise_and(mask, this.sudokuRegion, this.sudokuRegion);
-
-        this.cv.imshow('test-region', this.sudokuRegion);
 
         const result = this.predictor.predict(this.sudokuRegion.data);
 

@@ -11,5 +11,5 @@ declare global {
 }
 
 declare interface Window {
-	cv: any;
+	// cv: cv
 }
