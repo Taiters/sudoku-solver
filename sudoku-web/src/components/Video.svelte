@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { overlaySolution } from "$lib/processor";
-	import { cameraStream } from "$lib/store";
-	import { onMount } from "svelte";
-    import * as tf from "@tensorflow/tfjs";
-	import OpenCvLoader from "./OpenCVLoader.svelte";
-	import { SudokuFrameProcessor } from "$lib/core/processor";
-	import { SudokuPredictor } from "$lib/core/predictor";
+    import { overlaySolution } from '$lib/processor';
+    import { cameraStream } from '$lib/store';
+    import { onMount } from 'svelte';
+    import * as tf from '@tensorflow/tfjs';
+    import OpenCvLoader from './OpenCVLoader.svelte';
+    import { SudokuFrameProcessor } from '$lib/core/processor';
+    import { SudokuPredictor } from '$lib/core/predictor';
 
     let canvasElement: HTMLCanvasElement;
     let videoElement: HTMLVideoElement;
@@ -23,16 +23,16 @@
         (async () => {
             [digitsModel, orientationModel] = await Promise.all<tf.LayersModel>([
                 tf.loadLayersModel('/models/digits_9967_0100_1717968332/model.json'),
-                tf.loadLayersModel('/models/orientations_9027_2061_1717970078/model.json'),
+                tf.loadLayersModel('/models/orientations_9027_2061_1717970078/model.json')
             ]);
         })();
 
-        const ctx = canvasElement.getContext('2d', {willReadFrequently: true});
+        const ctx = canvasElement.getContext('2d', { willReadFrequently: true });
         videoElement.onloadedmetadata = () => {
             videoElement.play();
             canvasElement.width = videoElement.videoWidth;
             canvasElement.height = videoElement.videoHeight;
-        }
+        };
 
         const updateCanvas: VideoFrameRequestCallback = async (now, metadata) => {
             if (ctx == null) {
@@ -55,22 +55,29 @@
             }
 
             videoElement.requestVideoFrameCallback(updateCanvas);
-        }
+        };
 
         videoElement.requestVideoFrameCallback(updateCanvas);
     });
 
-    $: frameProcessor = loaded ? new SudokuFrameProcessor(window.cv, canvasElement.width, canvasElement.height, new SudokuPredictor(digitsModel, orientationModel)) : null;
+    $: frameProcessor = loaded
+        ? new SudokuFrameProcessor(
+                window.cv,
+                canvasElement.width,
+                canvasElement.height,
+                new SudokuPredictor(digitsModel, orientationModel)
+            )
+        : null;
     $: videoElement && (videoElement.srcObject = $cameraStream);
     $: loadedModels = digitsModel != null && orientationModel != null;
     $: loaded = loadedOpenCV && loadedModels;
 </script>
 
-<OpenCvLoader on:loaded={() => loadedOpenCV = true}/>
+<OpenCvLoader on:loaded={() => (loadedOpenCV = true)} />
 <video bind:this={videoElement} hidden />
 <canvas bind:this={canvasElement} id="output" class="w-full" />
-<canvas id="test-region"/>
-<canvas id="test-roi"/>
+<canvas id="test-region" />
+<canvas id="test-roi" />
 {#if solution != null}
     <p>It's a {solution} mate</p>
 {:else}
@@ -78,7 +85,7 @@
 {/if}
 {#if grid != null}
     {#each grid as row}
-        {row.join(' ')}<br/>
+        {row.join(' ')}<br />
     {/each}
 {/if}
 {#if !loaded}
