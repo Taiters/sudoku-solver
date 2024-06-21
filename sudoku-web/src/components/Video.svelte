@@ -8,6 +8,7 @@
 	import { SudokuPredictor } from '$lib/core/predictor';
 	import { UnsolvableGridError, solve, type SudokuGrid } from '$lib/core/sudoku';
 
+	let solutionElement: HTMLCanvasElement;
 	let canvasElement: HTMLCanvasElement;
 	let videoElement: HTMLVideoElement;
 	let cv: typeof openCV;
@@ -27,6 +28,7 @@
 		})();
 
 		const ctx = canvasElement.getContext('2d', { willReadFrequently: true });
+		const solutionCtx = solutionElement.getContext('2d');
 		videoElement.onloadedmetadata = () => {
 			videoElement.play();
 			canvasElement.width = videoElement.videoWidth;
@@ -34,7 +36,7 @@
 		};
 
 		const updateCanvas: VideoFrameRequestCallback = async (now, metadata) => {
-			if (ctx == null) {
+			if (ctx == null || solutionCtx == null) {
 				return;
 			}
 
@@ -47,6 +49,30 @@
 				if (frameData?.sudokuGrid) {
 					try {
 						solvedGrid = solve(frameData.sudokuGrid);
+						solutionCtx.clearRect(0, 0, solutionElement.width, solutionElement.height);
+						solutionCtx.strokeStyle = 'blue';
+						solutionCtx.lineWidth = 5;
+						solutionCtx.strokeRect(0, 0, solutionElement.width, solutionElement.height);
+						solutionCtx.textAlign = 'center';
+						solutionCtx.textBaseline = 'middle';
+						const cellSize = solutionElement.width / 9;
+						const halfCell = cellSize / 2;
+						solutionCtx.font = `${cellSize / 1.5}px sans-serif`;
+						for (let r = 0; r < 9; r++) {
+							for (let c = 0; c < 9; c++) {
+								const val = solvedGrid[r][c];
+								const x = c * cellSize + halfCell;
+								const y = r * cellSize + halfCell;
+
+								if (val < 0) {
+									solutionCtx.fillStyle = 'red';
+									solutionCtx.fillText(Math.abs(val).toString(), x, y, cellSize);
+								} else {
+									solutionCtx.fillStyle = 'green';
+									solutionCtx.fillText(val.toString(), x, y, cellSize);
+								}
+							}
+						}
 					} catch (err) {
 						if (err instanceof UnsolvableGridError) {
 							console.warn(err);
@@ -80,7 +106,8 @@
 
 <video bind:this={videoElement} hidden />
 <canvas bind:this={canvasElement} id="output" class="w-full" />
-{#if solvedGrid != null}
+<canvas bind:this={solutionElement} width="256" height="256" />
+<!-- {#if solvedGrid != null}
 	{#each solvedGrid as row, r}
 		<span>
 			{#each row as val, c}
@@ -93,7 +120,7 @@
 		</span>
 		<br />
 	{/each}
-{/if}
+{/if} -->
 {#if !loaded}
 	<div class="text-center absolute text-primary text-lg">
 		<span class="loading loading-spinner loading-lg" />
