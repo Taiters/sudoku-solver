@@ -53,9 +53,17 @@ export class SudokuRenderer {
 
         const transform = this.matBag.getMat(() => this.cv.getPerspectiveTransform(this.source, target));
         const frameMat = frame.mat();
+
         this.cv.warpPerspective(this.src, this.warped, transform, frameMat.size());
 
-        this.cv.threshold(this.warped, this.mask, 1, 255, this.cv.THRESH_BINARY);
+        // Maybe split the alpha channel of the warped image and use that in the subtraction (While Subtracting RGB by 255)...
+        this.cv.cvtColor(this.warped, this.mask, this.cv.COLOR_RGBA2GRAY)
+        this.cv.threshold(this.mask, this.mask, 1, 255, this.cv.THRESH_BINARY);
+        const all = new this.cv.Mat(frameMat.size().height, frameMat.size().width, this.cv.CV_8UC4, new this.cv.Scalar(255, 255, 255, 255));
+
+        this.cv.subtract(frameMat, all, frameMat, this.mask);
+        const t = new this.cv.Mat(frameMat.size().height, frameMat.size().width, this.cv.CV_8UC4, new this.cv.Scalar(0, 255, 0, 255));
+        this.cv.add(frameMat, this.warped, frameMat, this.mask);
         // Remove (subtract) the mask then add the warped image
         // this.cv.addWeighted(this.warped, 1, frameMat, 1, 0, frameMat);
     }
