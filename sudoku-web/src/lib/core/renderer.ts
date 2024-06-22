@@ -11,6 +11,7 @@ export class SudokuRenderer {
 
     private src: Mat;
     private warped: Mat;
+    private mask: Mat;
 
     private source: Mat;
     private matBag: MatBag;
@@ -26,6 +27,7 @@ export class SudokuRenderer {
         this.size = ctx.canvas.width;
         this.src = new cv.Mat(this.size, this.size, cv.CV_8UC4);
         this.warped = new cv.Mat();
+        this.mask = new cv.Mat();
         this.source = cv.matFromArray(4, 1, cv.CV_32FC2, [
             0,
             0,
@@ -52,7 +54,10 @@ export class SudokuRenderer {
         const transform = this.matBag.getMat(() => this.cv.getPerspectiveTransform(this.source, target));
         const frameMat = frame.mat();
         this.cv.warpPerspective(this.src, this.warped, transform, frameMat.size());
-        this.cv.addWeighted(this.warped, 1, frameMat, 1, 0, frameMat);
+
+        this.cv.threshold(this.warped, this.mask, 1, 255, this.cv.THRESH_BINARY);
+        // Remove (subtract) the mask then add the warped image
+        // this.cv.addWeighted(this.warped, 1, frameMat, 1, 0, frameMat);
     }
 
     private drawSolution(solution: number[][]) {
