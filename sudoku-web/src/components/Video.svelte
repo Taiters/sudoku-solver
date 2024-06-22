@@ -7,6 +7,7 @@
 	import { SudokuFrameProcessor, type SudokuFrameData } from '$lib/core/processor';
 	import { SudokuPredictor } from '$lib/core/predictor';
 	import { UnsolvableGridError, solve, type SudokuGrid } from '$lib/core/sudoku';
+	import { FrameContainer } from '$lib/core/frame';
 
 	let solutionElement: HTMLCanvasElement;
 	let canvasElement: HTMLCanvasElement;
@@ -16,6 +17,7 @@
 	let digitsModel: tf.LayersModel;
 	let orientationModel: tf.LayersModel;
 
+	let frameContainer: FrameContainer;
 	let frameData: SudokuFrameData | null;
 	let solvedGrid: SudokuGrid | null;
 
@@ -43,8 +45,12 @@
 			ctx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
 
 			if (frameProcessor) {
-				const frame = ctx.getImageData(0, 0, canvasElement.width, canvasElement.height).data;
-				frameData = frameProcessor.processFrame(new Uint8Array(frame.buffer));
+				if (!frameContainer) {
+					frameContainer = new FrameContainer(canvasElement.width, canvasElement.height, cv);
+				}
+
+				frameContainer.update(ctx);
+				frameData = frameProcessor.processFrame(frameContainer);
 
 				if (frameData?.sudokuGrid) {
 					try {
@@ -90,12 +96,7 @@
 	});
 
 	$: frameProcessor = loaded
-		? new SudokuFrameProcessor(
-				cv,
-				canvasElement.width,
-				canvasElement.height,
-				new SudokuPredictor(digitsModel, orientationModel)
-			)
+		? new SudokuFrameProcessor(cv, new SudokuPredictor(digitsModel, orientationModel))
 		: null;
 
 	$: videoElement && (videoElement.srcObject = $cameraStream);
@@ -107,20 +108,6 @@
 <video bind:this={videoElement} hidden />
 <canvas bind:this={canvasElement} id="output" class="w-full" />
 <canvas bind:this={solutionElement} width="256" height="256" />
-<!-- {#if solvedGrid != null}
-	{#each solvedGrid as row, r}
-		<span>
-			{#each row as val, c}
-				{#if val < 0}
-					<b>{Math.abs(val)} </b>
-				{:else}
-					<span>{val} </span>
-				{/if}
-			{/each}
-		</span>
-		<br />
-	{/each}
-{/if} -->
 {#if !loaded}
 	<div class="text-center absolute text-primary text-lg">
 		<span class="loading loading-spinner loading-lg" />

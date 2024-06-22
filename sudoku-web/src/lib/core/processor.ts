@@ -1,7 +1,8 @@
 import type { Mat, MatVector, Scalar } from 'opencv-ts';
 import type openCV from 'opencv-ts';
 import type { Orientation, SudokuPredictor } from './predictor';
-import type { SudokuGrid } from './sudoku';
+import { solve, type SudokuGrid } from './sudoku';
+import type { FrameContainer } from './frame';
 
 export type SudokuFrameData = {
     coordinates: number[][];
@@ -39,7 +40,6 @@ export class SudokuFrameProcessor {
     private predictor: SudokuPredictor;
     private options: SudokuFrameProcessorOptions;
 
-    private src: Mat;
     private binary: Mat;
     private sudokuRegion: Mat;
     private hierarchy: Mat;
@@ -56,8 +56,6 @@ export class SudokuFrameProcessor {
 
     constructor(
         cv: typeof openCV,
-        width: number,
-        height: number,
         predictor: SudokuPredictor,
         options: Partial<SudokuFrameProcessorOptions> = {}
     ) {
@@ -68,7 +66,6 @@ export class SudokuFrameProcessor {
             ...options
         };
 
-        this.src = new cv.Mat(height, width, this.cv.CV_8UC4);
         this.binary = new cv.Mat();
         this.sudokuRegion = new cv.Mat();
         this.hierarchy = new cv.Mat();
@@ -91,11 +88,74 @@ export class SudokuFrameProcessor {
         this.centralQuads = new cv.MatVector();
     }
 
-    processFrame(frame: Uint8Array): SudokuFrameData | null {
-        this.reset(frame);
+    processFrame(frameContainer: FrameContainer): SudokuFrameData | null {
+        const frameMat = frameContainer.mat();
+        this.reset();
 
-        // Convert to binary image
-        this.cv.cvtColor(this.src, this.binary, this.cv.COLOR_BGR2GRAY);
+        this.convertToBinary(frameMat);
+        const largest = this.getLargestCentralQuad(frameMat);
+        if (!largest) {
+            return null;
+        }
+
+        const corners = sortPointsClockwise([
+            [largest.data32S[0], largest.data32S[1]],
+            [largest.data32S[2], largest.data32S[3]],
+            [largest.data32S[4], largest.data32S[5]],
+            [largest.data32S[6], largest.data32S[7]]
+        ]);
+        this.updateSudokuRegion(corners);
+        const result = this.predictor.predict(this.sudokuRegion.data);
+
+        return {
+            coordinates: corners,
+            orientation: result.orientation,
+            sudokuGrid: result.sudokuGrid
+        };
+    }
+
+    private getMat() {
+        return this.addToMatBag(() => new this.cv.Mat());
+    }
+
+    private addToMatBag(createFn: () => Mat): Mat {
+        const mat = createFn();
+        this.matBag.push(mat);
+        return mat;
+    }
+
+    private reset() {
+        this.contours = this.resetVector(this.contours);
+        this.quads = this.resetVector(this.quads);
+        this.centralQuads = this.resetVector(this.centralQuads);
+
+        for (const mat of this.matBag) {
+            mat.delete();
+        }
+        this.matBag = [];
+    }
+
+    private resetVector(value: MatVector | null) {
+        if (value) {
+            value.delete();
+        }
+        return new this.cv.MatVector();
+    }
+
+    private getDistanceFromCenter(contour: Mat, cx: number, cy: number): [number, number] {
+        const moments = this.cv.moments(contour);
+        if (moments.m00 == 0) {
+            return [Infinity, Infinity];
+        }
+
+        const x = moments.m10 / moments.m00;
+        const y = moments.m01 / moments.m00;
+
+        return [Math.abs(x - cx), Math.abs(y - cy)];
+    }
+
+    private convertToBinary(src: Mat) {
+        this.cv.cvtColor(src, this.binary, this.cv.COLOR_BGR2GRAY);
         this.cv.threshold(
             this.binary,
             this.binary,
@@ -103,7 +163,23 @@ export class SudokuFrameProcessor {
             255,
             this.cv.THRESH_BINARY_INV + this.cv.THRESH_OTSU
         );
+    }
 
+    private getLargest(cnts: MatVector): any {
+        let largest;
+        let largestArea = -Infinity;
+        for (let i = 0; i < cnts.size(); i++) {
+            const cnt = cnts.get(i);
+            const area = Math.abs(this.cv.contourArea(cnt, false));
+            if (area > this.options.minArea && area > largestArea) {
+                largest = cnt;
+                largestArea = area;
+            }
+        }
+        return largest;
+    }
+
+    private getLargestCentralQuad(src: Mat) {
         // Get the quads
         this.cv.findContours(
             this.binary,
@@ -127,7 +203,7 @@ export class SudokuFrameProcessor {
         }
 
         // Find the central ones
-        const srcSize = this.src.size();
+        const srcSize = src.size();
         const cx = Math.ceil(srcSize.width / 2);
         const cy = Math.ceil(srcSize.height / 2);
         for (let i = 0; i < this.quads.size(); i++) {
@@ -141,19 +217,10 @@ export class SudokuFrameProcessor {
             }
         }
 
-        // Get the largest
-        const largest = this.getLargest(this.centralQuads);
-        if (!largest) {
-            return null;
-        }
+        return this.getLargest(this.centralQuads);
+    }
 
-        // Warp the region
-        const corners = sortPointsClockwise([
-            [largest.data32S[0], largest.data32S[1]],
-            [largest.data32S[2], largest.data32S[3]],
-            [largest.data32S[4], largest.data32S[5]],
-            [largest.data32S[6], largest.data32S[7]]
-        ]);
+    private updateSudokuRegion(corners: number[][]) {
         const resultSize = new this.cv.Size(
             this.options.sudokuRegionSize,
             this.options.sudokuRegionSize
@@ -182,69 +249,5 @@ export class SudokuFrameProcessor {
         }
         this.cv.bitwise_not(mask, mask);
         this.cv.bitwise_and(mask, this.sudokuRegion, this.sudokuRegion);
-
-        const result = this.predictor.predict(this.sudokuRegion.data);
-
-        return {
-            coordinates: corners,
-            orientation: result.orientation,
-            sudokuGrid: result.sudokuGrid
-        };
-    }
-
-    private getMat() {
-        return this.addToMatBag(() => new this.cv.Mat());
-    }
-
-    private addToMatBag(createFn: () => Mat): Mat {
-        const mat = createFn();
-        this.matBag.push(mat);
-        return mat;
-    }
-
-    private reset(frame: Uint8Array) {
-        this.contours = this.resetVector(this.contours);
-        this.quads = this.resetVector(this.quads);
-        this.centralQuads = this.resetVector(this.centralQuads);
-
-        for (const mat of this.matBag) {
-            mat.delete();
-        }
-        this.matBag = [];
-
-        this.src.data.set(frame);
-    }
-
-    private resetVector(value: MatVector | null) {
-        if (value) {
-            value.delete();
-        }
-        return new this.cv.MatVector();
-    }
-
-    private getDistanceFromCenter(contour: Mat, cx: number, cy: number): [number, number] {
-        const moments = this.cv.moments(contour);
-        if (moments.m00 == 0) {
-            return [Infinity, Infinity];
-        }
-
-        const x = moments.m10 / moments.m00;
-        const y = moments.m01 / moments.m00;
-
-        return [Math.abs(x - cx), Math.abs(y - cy)];
-    }
-
-    private getLargest(cnts: MatVector): any {
-        let largest;
-        let largestArea = -Infinity;
-        for (let i = 0; i < cnts.size(); i++) {
-            const cnt = cnts.get(i);
-            const area = Math.abs(this.cv.contourArea(cnt, false));
-            if (area > this.options.minArea && area > largestArea) {
-                largest = cnt;
-                largestArea = area;
-            }
-        }
-        return largest;
     }
 }
