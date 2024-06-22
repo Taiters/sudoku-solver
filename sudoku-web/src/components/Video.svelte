@@ -1,116 +1,76 @@
 <script lang="ts">
-	import type openCV from 'opencv-ts';
-	import { cameraStream } from '$lib/store';
-	import { onMount } from 'svelte';
-	import * as tf from '@tensorflow/tfjs';
-	import OpenCvLoader from './OpenCVLoader.svelte';
+	import ResourceLoader from './ResourceLoader.svelte';
 	import { SudokuFrameProcessor, type SudokuFrameData } from '$lib/core/processor';
 	import { SudokuPredictor } from '$lib/core/predictor';
 	import { UnsolvableGridError, solve, type SudokuGrid } from '$lib/core/sudoku';
 	import { FrameContainer } from '$lib/core/frame';
+	import CanvasCameraStream from './CanvasCameraStream.svelte';
+	import { SudokuRenderer } from '$lib/core/renderer';
+	import cv from 'opencv-ts';
 
+	let loaded: boolean = false;
 	let solutionElement: HTMLCanvasElement;
-	let canvasElement: HTMLCanvasElement;
-	let videoElement: HTMLVideoElement;
-	let cv: typeof openCV;
 
-	let digitsModel: tf.LayersModel;
-	let orientationModel: tf.LayersModel;
-
-	let frameContainer: FrameContainer;
 	let frameData: SudokuFrameData | null;
 	let solvedGrid: SudokuGrid | null;
 
-	onMount(async () => {
-		(async () => {
-			[digitsModel, orientationModel] = await Promise.all<tf.LayersModel>([
-				tf.loadLayersModel('/models/digits_9967_0100_1717968332/model.json'),
-				tf.loadLayersModel('/models/orientations_9027_2061_1717970078/model.json')
-			]);
-		})();
+	let container: FrameContainer;
+	let processor: SudokuFrameProcessor;
+	let predictor: SudokuPredictor;
+	let renderer: SudokuRenderer;
 
-		const ctx = canvasElement.getContext('2d', { willReadFrequently: true });
-		const solutionCtx = solutionElement.getContext('2d');
-		videoElement.onloadedmetadata = () => {
-			videoElement.play();
-			canvasElement.width = videoElement.videoWidth;
-			canvasElement.height = videoElement.videoHeight;
-		};
+	const onCameraFrame = (event: CustomEvent<CanvasRenderingContext2D>) => {
+		if (!loaded) {
+			return;
+		}
 
-		const updateCanvas: VideoFrameRequestCallback = async (now, metadata) => {
-			if (ctx == null || solutionCtx == null) {
-				return;
-			}
+		const ctx = event.detail;
 
-			ctx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+		container.update(ctx);
+		frameData = processor.processFrame(container);
 
-			if (frameProcessor) {
-				if (!frameContainer) {
-					frameContainer = new FrameContainer(canvasElement.width, canvasElement.height, cv);
-				}
-
-				frameContainer.update(ctx);
-				frameData = frameProcessor.processFrame(frameContainer);
-
-				if (frameData?.sudokuGrid) {
-					try {
-						solvedGrid = solve(frameData.sudokuGrid);
-						solutionCtx.clearRect(0, 0, solutionElement.width, solutionElement.height);
-						solutionCtx.strokeStyle = 'blue';
-						solutionCtx.lineWidth = 5;
-						solutionCtx.strokeRect(0, 0, solutionElement.width, solutionElement.height);
-						solutionCtx.textAlign = 'center';
-						solutionCtx.textBaseline = 'middle';
-						const cellSize = solutionElement.width / 9;
-						const halfCell = cellSize / 2;
-						solutionCtx.font = `${cellSize / 1.5}px sans-serif`;
-						for (let r = 0; r < 9; r++) {
-							for (let c = 0; c < 9; c++) {
-								const val = solvedGrid[r][c];
-								const x = c * cellSize + halfCell;
-								const y = r * cellSize + halfCell;
-
-								if (val < 0) {
-									solutionCtx.fillStyle = 'red';
-									solutionCtx.fillText(Math.abs(val).toString(), x, y, cellSize);
-								} else {
-									solutionCtx.fillStyle = 'green';
-									solutionCtx.fillText(val.toString(), x, y, cellSize);
-								}
-							}
-						}
-					} catch (err) {
-						if (err instanceof UnsolvableGridError) {
-							console.warn(err);
-						} else {
-							throw err;
-						}
-					}
+		if (frameData?.sudokuGrid) {
+			try {
+				solvedGrid = solve(frameData.sudokuGrid);
+				renderer.renderGridOnFrame(container, solvedGrid, frameData.coordinates);
+				ctx.putImageData(container.getImageData(), 0, 0);
+			} catch (err) {
+				if (err instanceof UnsolvableGridError) {
+					console.warn(err);
+				} else {
+					console.error(err);
+					throw err;
 				}
 			}
-
-			videoElement.requestVideoFrameCallback(updateCanvas);
-		};
-
-		videoElement.requestVideoFrameCallback(updateCanvas);
-	});
-
-	$: frameProcessor = loaded
-		? new SudokuFrameProcessor(cv, new SudokuPredictor(digitsModel, orientationModel))
-		: null;
-
-	$: videoElement && (videoElement.srcObject = $cameraStream);
-	$: loaded = cv != null && digitsModel != null && orientationModel != null;
+		}
+	};
 </script>
 
-<OpenCvLoader on:loaded={(event) => (cv = event.detail)} />
+<CanvasCameraStream on:frame={onCameraFrame} />
 
-<video bind:this={videoElement} hidden />
-<canvas bind:this={canvasElement} id="output" class="w-full" />
-<canvas bind:this={solutionElement} width="256" height="256" />
 {#if !loaded}
 	<div class="text-center absolute text-primary text-lg">
 		<span class="loading loading-spinner loading-lg" />
 		<p>Loading</p>
 	</div>
 {/if}
+
+<canvas bind:this={solutionElement} width="256" height="256" hidden />
+
+<ResourceLoader
+	on:loaded={(event) => {
+		predictor = new SudokuPredictor(
+			event.detail.tf,
+			event.detail.digitsModel,
+			event.detail.orientationModel
+		);
+		processor = new SudokuFrameProcessor(event.detail.cv, predictor);
+		container = new FrameContainer(event.detail.cv);
+		renderer = new SudokuRenderer(
+			event.detail.cv,
+			// @ts-ignore
+			solutionElement.getContext('2d', { willReadFrequently: true })
+		);
+		loaded = true;
+	}}
+/>

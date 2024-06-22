@@ -1,8 +1,9 @@
 import type { Mat, MatVector, Scalar } from 'opencv-ts';
 import type openCV from 'opencv-ts';
 import type { Orientation, SudokuPredictor } from './predictor';
-import { solve, type SudokuGrid } from './sudoku';
+import type { SudokuGrid } from './sudoku';
 import type { FrameContainer } from './frame';
+import { MatBag } from './matBag';
 
 export type SudokuFrameData = {
     coordinates: number[][];
@@ -52,7 +53,7 @@ export class SudokuFrameProcessor {
 
     private white: Scalar;
 
-    private matBag: Mat[] = [];
+    private matBag: MatBag;
 
     constructor(
         cv: typeof openCV,
@@ -65,6 +66,8 @@ export class SudokuFrameProcessor {
             ...DEFAULT_OPTIONS,
             ...options
         };
+
+        this.matBag = new MatBag(cv);
 
         this.binary = new cv.Mat();
         this.sudokuRegion = new cv.Mat();
@@ -114,25 +117,11 @@ export class SudokuFrameProcessor {
         };
     }
 
-    private getMat() {
-        return this.addToMatBag(() => new this.cv.Mat());
-    }
-
-    private addToMatBag(createFn: () => Mat): Mat {
-        const mat = createFn();
-        this.matBag.push(mat);
-        return mat;
-    }
-
     private reset() {
         this.contours = this.resetVector(this.contours);
         this.quads = this.resetVector(this.quads);
         this.centralQuads = this.resetVector(this.centralQuads);
-
-        for (const mat of this.matBag) {
-            mat.delete();
-        }
-        this.matBag = [];
+        this.matBag.reset();
     }
 
     private resetVector(value: MatVector | null) {
@@ -190,7 +179,7 @@ export class SudokuFrameProcessor {
         );
         for (let i = 0; i < this.contours.size(); i++) {
             const cnt = this.contours.get(i);
-            const poly = this.getMat();
+            const poly = this.matBag.getMat();
             this.cv.approxPolyDP(
                 cnt,
                 poly,
@@ -225,15 +214,15 @@ export class SudokuFrameProcessor {
             this.options.sudokuRegionSize,
             this.options.sudokuRegionSize
         );
-        const source = this.addToMatBag(() =>
+        const source = this.matBag.getMat(() =>
             this.cv.matFromArray(4, 1, this.cv.CV_32FC2, corners.flat())
         );
-        const transform = this.addToMatBag(() => this.cv.getPerspectiveTransform(source, this.target));
+        const transform = this.matBag.getMat(() => this.cv.getPerspectiveTransform(source, this.target));
         this.cv.warpPerspective(this.binary, this.sudokuRegion, transform, resultSize);
 
         // Clean the grid lines
         // @ts-ignore (Complains about zeros, but it's valid)
-        const mask = this.addToMatBag(() => this.cv.Mat.zeros(252, 252, cv.CV_8U));
+        const mask = this.matBag.getMat(() => this.cv.Mat.zeros(252, 252, cv.CV_8U));
         // @ts-ignore (Complains about arg length)
         this.cv.HoughLinesP(this.sudokuRegion, this.lines, 1, Math.PI / 2, 50, 60, 5);
         for (let i = 0; i < this.lines.rows; i++) {
