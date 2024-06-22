@@ -19,12 +19,10 @@
 	let predictor: SudokuPredictor;
 	let renderer: SudokuRenderer;
 
-	const onCameraFrame = (event: CustomEvent<CanvasRenderingContext2D>) => {
+	const onCameraFrame = (ctx: CanvasRenderingContext2D) => {
 		if (!loaded) {
 			return;
 		}
-
-		const ctx = event.detail;
 
 		container.update(ctx);
 		frameData = processor.processFrame(container);
@@ -46,7 +44,7 @@
 	};
 </script>
 
-<CanvasCameraStream on:frame={onCameraFrame} />
+<CanvasCameraStream onFrame={onCameraFrame} />
 
 {#if !loaded}
 	<div class="text-center absolute text-primary text-lg">

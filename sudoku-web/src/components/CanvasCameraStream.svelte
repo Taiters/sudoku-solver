@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { cameraStream } from '$lib/store';
-	import { createEventDispatcher, onMount } from 'svelte';
+	import { onMount } from 'svelte';
 
-	const dispatch = createEventDispatcher<{ frame: CanvasRenderingContext2D }>();
+	export let onFrame: (ctx: CanvasRenderingContext2D) => void;
 
 	let canvasElement: HTMLCanvasElement;
 	let videoElement: HTMLVideoElement;
@@ -21,7 +21,7 @@
 			}
 
 			ctx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
-			dispatch('frame', ctx);
+			onFrame(ctx);
 			videoElement.requestVideoFrameCallback(frameCallback);
 		};
 
