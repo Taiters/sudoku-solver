@@ -26,18 +26,21 @@
     container.update(ctx);
     frameData = processor.processFrame(container);
 
-    if (frameData?.sudokuGrid) {
+    if (frameData) {
+      const predictions = predictor.predict(frameData.sudokuRegion);
       try {
-        solvedGrid = solve(frameData.sudokuGrid);
-        renderer.renderGridOnFrame(container, solvedGrid, frameData.coordinates);
-        ctx.putImageData(container.getImageData(), 0, 0);
+        solvedGrid = solve(predictions.sudokuGrid);
       } catch (err) {
         if (err instanceof UnsolvableGridError) {
           console.warn(err);
         } else {
-          console.error(err);
           throw err;
         }
+      }
+
+      if (solvedGrid) {
+        renderer.renderGridOnFrame(container, solvedGrid, frameData.coordinates);
+        ctx.putImageData(container.getImageData(), 0, 0);
       }
     }
   };

@@ -1,14 +1,11 @@
 import type { Mat, MatVector, Scalar } from "opencv-ts";
 import type openCV from "opencv-ts";
-import type { Orientation, SudokuPredictor } from "./predictor";
-import type { SudokuGrid } from "./sudoku";
 import type { FrameContainer } from "./frame";
 import { MatBag } from "./matBag";
 
 export type SudokuFrameData = {
   coordinates: number[][];
-  sudokuGrid: SudokuGrid;
-  orientation: Orientation;
+  sudokuRegion: Uint8Array;
 };
 
 export type SudokuFrameProcessorOptions = {
@@ -38,7 +35,6 @@ const sortPointsClockwise = (points: number[][]): number[][] => {
 
 export class SudokuFrameProcessor {
   private cv: typeof openCV;
-  private predictor: SudokuPredictor;
   private options: SudokuFrameProcessorOptions;
 
   private binary: Mat;
@@ -55,13 +51,8 @@ export class SudokuFrameProcessor {
 
   private matBag: MatBag;
 
-  constructor(
-    cv: typeof openCV,
-    predictor: SudokuPredictor,
-    options: Partial<SudokuFrameProcessorOptions> = {},
-  ) {
+  constructor(cv: typeof openCV, options: Partial<SudokuFrameProcessorOptions> = {}) {
     this.cv = cv;
-    this.predictor = predictor;
     this.options = {
       ...DEFAULT_OPTIONS,
       ...options,
@@ -108,12 +99,10 @@ export class SudokuFrameProcessor {
       [largest.data32S[6], largest.data32S[7]],
     ]);
     this.updateSudokuRegion(corners);
-    const result = this.predictor.predict(this.sudokuRegion.data);
 
     return {
       coordinates: corners,
-      orientation: result.orientation,
-      sudokuGrid: result.sudokuGrid,
+      sudokuRegion: this.sudokuRegion.data,
     };
   }
 
