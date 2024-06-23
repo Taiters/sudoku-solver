@@ -1,13 +1,15 @@
 <script lang="ts">
   import ResourceLoader from "./ResourceLoader.svelte";
   import { SudokuFrameProcessor, type SudokuFrameData } from "$lib/core/processor";
-  import { SudokuPredictor } from "$lib/core/predictor";
-  import { UnsolvableGridError, solve, type SudokuGrid } from "$lib/core/sudoku";
+  import type { SudokuGrid } from "$lib/core/sudoku";
   import { FrameContainer } from "$lib/core/frame";
   import CanvasCameraStream from "./CanvasCameraStream.svelte";
   import { SudokuRenderer } from "$lib/core/renderer";
+  import type { PredictorWorkerResponse } from "$lib/predictorWorker";
 
   let loaded: boolean = false;
+  let workerReady: boolean = false;
+
   let solutionElement: HTMLCanvasElement;
 
   let frameData: SudokuFrameData | null;
@@ -15,8 +17,22 @@
 
   let container: FrameContainer;
   let processor: SudokuFrameProcessor;
-  let predictor: SudokuPredictor;
   let renderer: SudokuRenderer;
+
+  const worker = new Worker(new URL("../lib/predictorWorker.ts", import.meta.url), {
+    type: "module",
+  });
+
+  worker.onmessage = (e: MessageEvent) => {
+    const response = e.data as PredictorWorkerResponse;
+    if (response.message === "ready") {
+      workerReady = true;
+    }
+
+    if (response.message === "prediction") {
+      solvedGrid = response.data.solvedGrid;
+    }
+  };
 
   const onCameraFrame = (ctx: CanvasRenderingContext2D) => {
     if (!loaded) {
@@ -27,25 +43,29 @@
     frameData = processor.processFrame(container);
 
     if (frameData) {
-      const predictions = predictor.predict(frameData.sudokuRegion);
-      if (predictions) {
-        try {
-          solvedGrid = solve(predictions.sudokuGrid);
-        } catch (err) {
-          if (err instanceof UnsolvableGridError) {
-            console.warn(err);
-          } else {
-            throw err;
-          }
-        }
-      }
+      // This is slow as it's a copy. Transferable objects might help here
+      // https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers#passing_data_by_transferring_ownership_transferable_objects
+      // worker.postMessage({
+      //   message: "predict",
+      //   data: frameData.sudokuRegion,
+      // });
 
-      if (solvedGrid) {
-        renderer.renderGridOnFrame(container, solvedGrid, frameData.coordinates);
-        ctx.putImageData(container.getImageData(), 0, 0);
-      }
+      worker.postMessage(
+        {
+          message: "predict",
+          data: frameData.sudokuRegion,
+        },
+        [frameData.sudokuRegion.buffer],
+      );
+
+      // if (solvedGrid) {
+      //   renderer.renderGridOnFrame(container, solvedGrid, frameData.coordinates);
+      //   ctx.putImageData(container.getImageData(), 0, 0);
+      // }
     }
   };
+
+  $: loaded = processor && container && renderer && workerReady;
 </script>
 
 <CanvasCameraStream onFrame={onCameraFrame} />
@@ -61,18 +81,12 @@
 
 <ResourceLoader
   on:loaded={(event) => {
-    predictor = new SudokuPredictor(
-      event.detail.tf,
-      event.detail.digitsModel,
-      event.detail.orientationModel,
-    );
-    processor = new SudokuFrameProcessor(event.detail.cv, predictor);
+    processor = new SudokuFrameProcessor(event.detail.cv);
     container = new FrameContainer(event.detail.cv);
     renderer = new SudokuRenderer(
       event.detail.cv,
       // @ts-expect-error: getContext shouldn't be null here..
       solutionElement.getContext("2d", { willReadFrequently: true }),
     );
-    loaded = true;
   }}
 />

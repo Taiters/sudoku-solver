@@ -1,9 +1,6 @@
 <script context="module" lang="ts">
   export type LoadedResources = {
     cv: typeof openCV;
-    tf: typeof tensorflow;
-    digitsModel: LayersModel;
-    orientationModel: LayersModel;
   };
 
   declare global {
@@ -16,8 +13,6 @@
 <script lang="ts">
   import { createEventDispatcher, onMount } from "svelte";
   import type openCV from "opencv-ts";
-  import type tensorflow from "@tensorflow/tfjs";
-  import type { LayersModel } from "@tensorflow/tfjs";
 
   const SCRIPT_ID = "opencv_script";
   const PATH = "/opencv.js";
@@ -25,17 +20,6 @@
   const dispatch = createEventDispatcher<{ loaded: LoadedResources }>();
 
   let cv: typeof openCV;
-  let tf: typeof tensorflow;
-  let digitsModel: LayersModel;
-  let orientationModel: LayersModel;
-
-  onMount(async () => {
-    tf = await import("@tensorflow/tfjs");
-    [digitsModel, orientationModel] = await Promise.all<LayersModel>([
-      tf.loadLayersModel("/models/digits_9967_0100_1717968332/model.json"),
-      tf.loadLayersModel("/models/orientations_9027_2061_1717970078/model.json"),
-    ]);
-  });
 
   if (!document.getElementById(SCRIPT_ID)) {
     const openCVScript = document.createElement("script");
@@ -64,13 +48,10 @@
   }
 
   $: {
-    if (cv && tf && digitsModel && orientationModel) {
+    if (cv) {
       waitUntilCVEvaluated(cv, () => {
         dispatch("loaded", {
-          tf,
           cv,
-          digitsModel,
-          orientationModel,
         });
       });
     }
