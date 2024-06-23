@@ -5,6 +5,12 @@
     digitsModel: LayersModel;
     orientationModel: LayersModel;
   };
+
+  declare global {
+    interface Window {
+      cv: typeof openCV;
+    }
+  }
 </script>
 
 <script lang="ts">
@@ -40,7 +46,7 @@
     openCVScript.setAttribute("type", "text/javascript");
 
     openCVScript.onload = () => {
-      cv = window.cv as typeof openCV;
+      cv = window.cv;
     };
 
     document.body.appendChild(openCVScript);

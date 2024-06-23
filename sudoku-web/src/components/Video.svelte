@@ -6,7 +6,6 @@
   import { FrameContainer } from "$lib/core/frame";
   import CanvasCameraStream from "./CanvasCameraStream.svelte";
   import { SudokuRenderer } from "$lib/core/renderer";
-  import cv from "opencv-ts";
 
   let loaded: boolean = false;
   let solutionElement: HTMLCanvasElement;
@@ -66,7 +65,7 @@
     container = new FrameContainer(event.detail.cv);
     renderer = new SudokuRenderer(
       event.detail.cv,
-      // @ts-ignore
+      // @ts-expect-error: getContext shouldn't be null here..
       solutionElement.getContext("2d", { willReadFrequently: true }),
     );
     loaded = true;

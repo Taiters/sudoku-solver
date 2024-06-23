@@ -154,8 +154,8 @@ export class SudokuFrameProcessor {
     );
   }
 
-  private getLargest(cnts: MatVector): any {
-    let largest;
+  private getLargest(cnts: MatVector): Mat | null {
+    let largest = null;
     let largestArea = -Infinity;
     for (let i = 0; i < cnts.size(); i++) {
       const cnt = cnts.get(i);
@@ -223,9 +223,9 @@ export class SudokuFrameProcessor {
     this.cv.warpPerspective(this.binary, this.sudokuRegion, transform, resultSize);
 
     // Clean the grid lines
-    // @ts-ignore (Complains about zeros, but it's valid)
+    // @ts-expect-error (Complains about zeros, but it's valid)
     const mask = this.matBag.getMat(() => this.cv.Mat.zeros(252, 252, cv.CV_8U));
-    // @ts-ignore (Complains about arg length)
+    // @ts-expect-error (Complains about arg length)
     this.cv.HoughLinesP(this.sudokuRegion, this.lines, 1, Math.PI / 2, 50, 60, 5);
     for (let i = 0; i < this.lines.rows; i++) {
       const startPoint = new this.cv.Point(

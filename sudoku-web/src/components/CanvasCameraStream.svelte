@@ -15,7 +15,8 @@
       canvasElement.height = videoElement.videoHeight;
     };
 
-    const frameCallback: VideoFrameRequestCallback = async (now, metadata) => {
+    // eslint-disable-next-line no-undef
+    const frameCallback: VideoFrameRequestCallback = async () => {
       if (ctx == null) {
         return;
       }
@@ -28,8 +29,14 @@
     videoElement.requestVideoFrameCallback(frameCallback);
   });
 
-  $: videoElement && (videoElement.srcObject = $cameraStream);
+  $: {
+    if (videoElement) {
+      videoElement.srcObject = $cameraStream;
+    }
+  }
 </script>
 
-<video bind:this={videoElement} hidden />
+<video bind:this={videoElement} hidden>
+  <track kind="captions" />
+</video>
 <canvas bind:this={canvasElement} class="w-full" />

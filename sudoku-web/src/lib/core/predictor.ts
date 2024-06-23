@@ -59,7 +59,7 @@ export class SudokuPredictor {
     });
   }
 
-  private fixRotation(image: Tensor, orientation: Orientation): Tensor {
+  private fixRotation(image: Tensor): Tensor {
     // Work this out
     // if (orientation != 0) {
     //     return tf.image.rotateWithOffset(image as tf.Tensor4D, (360-orientation) * Math.PI / 180)

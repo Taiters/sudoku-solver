@@ -11,5 +11,6 @@ export default {
     // TODO: Add a dark theme, but I like working with this for now
     themes: ["cupcake"],
   },
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   plugins: [require("daisyui")],
 };

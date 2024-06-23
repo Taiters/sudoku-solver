@@ -9,7 +9,3 @@ declare global {
     // interface Platform {}
   }
 }
-
-declare interface Window {
-  // cv: cv
-}
