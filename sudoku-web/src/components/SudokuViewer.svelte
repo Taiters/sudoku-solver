@@ -28,13 +28,15 @@
 
     if (frameData) {
       const predictions = predictor.predict(frameData.sudokuRegion);
-      try {
-        solvedGrid = solve(predictions.sudokuGrid);
-      } catch (err) {
-        if (err instanceof UnsolvableGridError) {
-          console.warn(err);
-        } else {
-          throw err;
+      if (predictions) {
+        try {
+          solvedGrid = solve(predictions.sudokuGrid);
+        } catch (err) {
+          if (err instanceof UnsolvableGridError) {
+            console.warn(err);
+          } else {
+            throw err;
+          }
         }
       }
 

@@ -45,18 +45,24 @@ export class SudokuPredictor {
     };
   }
 
-  predict(data: Uint8Array): SudokuPredictorResult {
-    return this.tf.tidy<SudokuPredictorResult>(() => {
-      const sudokuTensor = this.tf.tensor(data, [252, 252]).div(this.tf.scalar(255));
-      const orientation = this.predictOrientation(sudokuTensor);
-      const fixed = this.fixRotation(sudokuTensor, orientation);
-      const sudokuGrid = this.predictSudokuDigits(fixed);
+  predict(data: Uint8Array): SudokuPredictorResult | null {
+    return (
+      this.tf.tidy<SudokuPredictorResult | undefined>(() => {
+        const sudokuTensor = this.tf.tensor(data, [252, 252]).div(this.tf.scalar(255));
+        const orientation = this.predictOrientation(sudokuTensor);
+        const fixed = this.fixRotation(sudokuTensor, orientation);
+        const sudokuGrid = this.predictSudokuDigits(fixed);
 
-      return {
-        orientation,
-        sudokuGrid,
-      };
-    });
+        if (!sudokuGrid) {
+          return;
+        }
+
+        return {
+          orientation,
+          sudokuGrid,
+        };
+      }) ?? null
+    );
   }
 
   private fixRotation(image: Tensor): Tensor {
@@ -67,13 +73,14 @@ export class SudokuPredictor {
     return image;
   }
 
-  private predictSudokuDigits(sudokuImage: Tensor): number[][] {
+  private predictSudokuDigits(sudokuImage: Tensor): number[][] | null {
     const cells = reshapeForModel(this.tf, sudokuImage);
     const result = this.digitsModel.predict(cells) as Tensor;
 
     const data = result.arraySync() as number[][];
     const predictions = result.argMax(1).dataSync();
 
+    let count = 0;
     const grid = [];
     for (let r = 0; r < 9; r++) {
       const row: number[] = [];
@@ -83,10 +90,17 @@ export class SudokuPredictor {
         const conf = data[i][predictions[i]];
         if (conf > this.options.minDigitConfidence) {
           row.push(predictions[i]);
+          count++;
         } else {
           row.push(0);
         }
       }
+    }
+
+    // Apparently 17 is the minimum, but lets give some room for digits
+    // to be missed
+    if (count < 15) {
+      return null;
     }
 
     return grid;
