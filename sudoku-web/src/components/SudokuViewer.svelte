@@ -34,6 +34,10 @@
     }
   };
 
+  const copyData = (toCopy: Uint8Array): Uint8Array => {
+    return new Uint8Array(toCopy);
+  };
+
   const onCameraFrame = (ctx: CanvasRenderingContext2D) => {
     if (!loaded) {
       return;
@@ -50,6 +54,9 @@
       //   data: frameData.sudokuRegion,
       // });
 
+      // Also seems like we can't directly transfer the sudokuRegion, as it's from a shared WASM memory
+      // so instead, we can copy it here then transfer the ownership (Which seems faster)
+      // (I've moved the copy into the processor, so no visible change, but good to remember this..)
       worker.postMessage(
         {
           message: "predict",
@@ -58,10 +65,10 @@
         [frameData.sudokuRegion.buffer],
       );
 
-      // if (solvedGrid) {
-      //   renderer.renderGridOnFrame(container, solvedGrid, frameData.coordinates);
-      //   ctx.putImageData(container.getImageData(), 0, 0);
-      // }
+      if (solvedGrid) {
+        renderer.renderGridOnFrame(container, solvedGrid, frameData.coordinates);
+        ctx.putImageData(container.getImageData(), 0, 0);
+      }
     }
   };
 

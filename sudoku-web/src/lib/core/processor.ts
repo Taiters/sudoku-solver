@@ -102,7 +102,8 @@ export class SudokuFrameProcessor {
 
     return {
       coordinates: corners,
-      sudokuRegion: this.sudokuRegion.data,
+      sudokuRegion: new Uint8Array(this.sudokuRegion.data),
+      // sudokuRegion: this.sudokuRegion.data,
     };
   }
 
