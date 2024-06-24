@@ -53,4 +53,4 @@
 <video bind:this={videoElement} hidden>
   <track kind="captions" />
 </video>
-<canvas bind:this={canvasElement} class="w-full" />
+<canvas bind:this={canvasElement} class="w-full rounded-lg border-2 border-base-300 shadow-inner" />

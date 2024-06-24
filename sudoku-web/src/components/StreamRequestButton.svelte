@@ -21,8 +21,6 @@
   }
 </script>
 
-<h1 class="text-4xl font-bold">Sudoku Solver</h1>
-<p>Solve a sudoku puzzle with your camera</p>
 <button disabled={requestingStream} on:click={handleClick} class="btn btn-primary mt-8">
   Solve a puzzle
 </button>

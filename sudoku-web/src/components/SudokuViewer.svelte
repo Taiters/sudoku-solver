@@ -70,14 +70,15 @@
   $: loaded = processor && container && renderer && workerReady;
 </script>
 
-<CanvasCameraStream onFrame={onCameraFrame} />
-
-{#if !loaded}
-  <div class="text-center absolute text-primary text-lg">
-    <span class="loading loading-spinner loading-lg" />
-    <p>Loading</p>
-  </div>
-{/if}
+<div class="flex items-center justify-center">
+  <CanvasCameraStream onFrame={onCameraFrame} />
+  {#if !loaded}
+    <div class="text-center absolute text-primary text-lg">
+      <span class="loading loading-spinner loading-lg" />
+      <p>Loading</p>
+    </div>
+  {/if}
+</div>
 
 <canvas bind:this={solutionElement} width="256" height="256" hidden />
 
