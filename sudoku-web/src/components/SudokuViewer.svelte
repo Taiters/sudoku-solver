@@ -8,6 +8,8 @@
   import type { PredictorWorkerResponse } from "$lib/predictorWorker";
   import { onDestroy } from "svelte";
 
+  export let canvasElement: HTMLCanvasElement;
+
   let loaded: boolean = false;
   let workerReady: boolean = false;
 
@@ -71,7 +73,7 @@
 </script>
 
 <div class="flex items-center justify-center">
-  <CanvasCameraStream onFrame={onCameraFrame} />
+  <CanvasCameraStream onFrame={onCameraFrame} bind:canvasElement />
   {#if !loaded}
     <div class="text-center absolute text-primary text-lg">
       <span class="loading loading-spinner loading-lg" />

@@ -4,8 +4,8 @@
   import { onDestroy, onMount } from "svelte";
 
   export let onFrame: (ctx: CanvasRenderingContext2D) => void;
+  export let canvasElement: HTMLCanvasElement;
 
-  let canvasElement: HTMLCanvasElement;
   let videoElement: HTMLVideoElement;
   let callbackID: number;
   let destroyed: boolean = false;
