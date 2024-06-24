@@ -6,6 +6,7 @@
   import CanvasCameraStream from "./CanvasCameraStream.svelte";
   import { SudokuRenderer } from "$lib/core/renderer";
   import type { PredictorWorkerResponse } from "$lib/predictorWorker";
+  import { onDestroy } from "svelte";
 
   let loaded: boolean = false;
   let workerReady: boolean = false;
@@ -33,6 +34,14 @@
       solvedGrid = response.data.solvedGrid;
     }
   };
+
+  onDestroy(() => {
+    worker.terminate();
+
+    container?.delete();
+    processor?.delete();
+    renderer?.delete();
+  });
 
   const onCameraFrame = (ctx: CanvasRenderingContext2D) => {
     if (!loaded) {
@@ -73,11 +82,12 @@
 <canvas bind:this={solutionElement} width="256" height="256" hidden />
 
 <ResourceLoader
-  on:loaded={(event) => {
-    processor = new SudokuFrameProcessor(event.detail.cv);
-    container = new FrameContainer(event.detail.cv);
+  onLoaded={(cv) => {
+    console.log("IN LOADED EVENT");
+    processor = new SudokuFrameProcessor(cv);
+    container = new FrameContainer(cv);
     renderer = new SudokuRenderer(
-      event.detail.cv,
+      cv,
       // @ts-expect-error: getContext shouldn't be null here..
       solutionElement.getContext("2d", { willReadFrequently: true }),
     );

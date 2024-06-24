@@ -51,6 +51,8 @@ export class SudokuFrameProcessor {
 
   private matBag: MatBag;
 
+  private deleted: boolean = false;
+
   constructor(cv: typeof openCV, options: Partial<SudokuFrameProcessorOptions> = {}) {
     this.cv = cv;
     this.options = {
@@ -82,6 +84,20 @@ export class SudokuFrameProcessor {
     this.centralQuads = new cv.MatVector();
   }
 
+  delete() {
+    this.deleted = true;
+
+    this.binary.delete();
+    this.sudokuRegion.delete();
+    this.hierarchy.delete();
+    this.lines.delete();
+    this.target.delete();
+    this.contours.delete();
+    this.quads.delete();
+    this.centralQuads.delete();
+    this.matBag.reset();
+  }
+
   processFrame(frameContainer: FrameContainer): SudokuFrameData | null {
     const frameMat = frameContainer.mat();
     this.reset();
@@ -109,6 +125,10 @@ export class SudokuFrameProcessor {
   }
 
   private reset() {
+    if (this.deleted) {
+      return;
+    }
+
     this.contours = this.resetVector(this.contours);
     this.quads = this.resetVector(this.quads);
     this.centralQuads = this.resetVector(this.centralQuads);

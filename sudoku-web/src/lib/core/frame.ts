@@ -7,6 +7,8 @@ export class FrameContainer {
   private width: number = 0;
   private height: number = 0;
 
+  private deleted: boolean = false;
+
   constructor(cv: typeof openCV) {
     this.cv = cv;
   }
@@ -34,7 +36,16 @@ export class FrameContainer {
     return new ImageData(new Uint8ClampedArray(this.mat().data), this.width, this.height);
   }
 
+  delete() {
+    this.deleted = true;
+    this.src?.delete();
+  }
+
   private resetMat(width: number, height: number) {
+    if (this.deleted) {
+      return;
+    }
+
     if (this.src) {
       this.src.delete();
     }

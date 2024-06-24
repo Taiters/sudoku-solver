@@ -1,11 +1,11 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import SudokuViewer from "$components/SudokuViewer.svelte";
   import Welcome from "$components/Welcome.svelte";
-  import { cameraStream } from "$lib/store";
 </script>
 
 <div class="container center flex flex-col h-screen justify-center items-center">
-  {#if $cameraStream}
+  {#if $page.state.hasEnabledCamera}
     <SudokuViewer />
   {:else}
     <Welcome />

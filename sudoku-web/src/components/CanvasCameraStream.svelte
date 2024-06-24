@@ -1,11 +1,19 @@
 <script lang="ts">
+  import { replaceState } from "$app/navigation";
   import { cameraStream } from "$lib/store";
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
 
   export let onFrame: (ctx: CanvasRenderingContext2D) => void;
 
   let canvasElement: HTMLCanvasElement;
   let videoElement: HTMLVideoElement;
+  let callbackID: number;
+  let destroyed: boolean = false;
+
+  onDestroy(() => {
+    videoElement?.cancelVideoFrameCallback(callbackID);
+    destroyed = true;
+  });
 
   onMount(async () => {
     const ctx = canvasElement.getContext("2d", { willReadFrequently: true });
@@ -17,20 +25,26 @@
 
     // eslint-disable-next-line no-undef
     const frameCallback: VideoFrameRequestCallback = async () => {
-      if (ctx == null) {
+      if (ctx == null || canvasElement == null) {
         return;
       }
 
       ctx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
       onFrame(ctx);
-      videoElement.requestVideoFrameCallback(frameCallback);
+      if (!destroyed) {
+        callbackID = videoElement.requestVideoFrameCallback(frameCallback);
+      }
     };
 
-    videoElement.requestVideoFrameCallback(frameCallback);
+    callbackID = videoElement.requestVideoFrameCallback(frameCallback);
   });
 
   $: {
-    if (videoElement) {
+    if (!$cameraStream) {
+      replaceState("", {
+        hasEnabledCamera: false,
+      });
+    } else if (videoElement) {
       videoElement.srcObject = $cameraStream;
     }
   }

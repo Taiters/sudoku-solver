@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { pushState } from "$app/navigation";
   import { cameraStream } from "$lib/store";
 
   let requestingStream = false;
@@ -10,6 +11,9 @@
     try {
       $cameraStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment" },
+      });
+      pushState("", {
+        hasEnabledCamera: true,
       });
     } catch {
       deniedPermission = true;

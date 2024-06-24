@@ -38,6 +38,14 @@ export class SudokuRenderer {
     this.matBag = new MatBag(cv);
   }
 
+  delete() {
+    this.src.delete();
+    this.warped.delete();
+    this.source.delete();
+
+    this.matBag.reset();
+  }
+
   renderGridOnFrame(frame: FrameContainer, solution: number[][], corners: number[][]) {
     this.matBag.reset();
 
