@@ -102,8 +102,9 @@ export class SudokuFrameProcessor {
 
     return {
       coordinates: corners,
+      // If I stop posting to the worker for predictions every time, then we don't need this copy here
+      // ...but I'm being lazy, and until then, this is a good place for it.
       sudokuRegion: new Uint8Array(this.sudokuRegion.data),
-      // sudokuRegion: this.sudokuRegion.data,
     };
   }
 
