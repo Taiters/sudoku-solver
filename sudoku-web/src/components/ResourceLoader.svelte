@@ -39,12 +39,10 @@
   }
 
   function waitUntilCVEvaluated(cv: typeof openCV, cb: () => undefined) {
-    console.log("Waiting...");
     // Seems there can be a delay between loaded and
     // things being available. Can check here to only fire
     // the event when Mat is available.
     if (cv.Mat) {
-      console.log("Hitting callback");
       cb();
     } else {
       setTimeout(() => waitUntilCVEvaluated(cv, cb), 1);

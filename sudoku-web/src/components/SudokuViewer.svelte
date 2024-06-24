@@ -83,7 +83,6 @@
 
 <ResourceLoader
   onLoaded={(cv) => {
-    console.log("IN LOADED EVENT");
     processor = new SudokuFrameProcessor(cv);
     container = new FrameContainer(cv);
     renderer = new SudokuRenderer(

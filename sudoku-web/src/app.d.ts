@@ -6,9 +6,7 @@ declare global {
     // interface Locals {}
     // interface PageData {}
     // interface Platform {}
-    interface PageState {
-      hasEnabledCamera: boolean;
-    }
+    // interface PageState {}
   }
 }
 
