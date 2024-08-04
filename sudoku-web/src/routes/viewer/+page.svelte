@@ -1,7 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import SudokuViewer from "$components/SudokuViewer.svelte";
-  import { cameraStream } from "$lib/store";
+  import { cameraStream, image } from "$lib/store";
+  import posthog from "posthog-js";
   import { onMount } from "svelte";
   import FaCamera from "svelte-icons/fa/FaCamera.svelte";
 
@@ -13,15 +14,14 @@
     }
   });
 
-  function downloadImage() {
+  function takeImage() {
     if (!canvasElement) {
       return;
     }
 
-    const link = document.createElement("a");
-    link.download = "sudoku.png";
-    link.href = canvasElement.toDataURL();
-    link.click();
+    $image = canvasElement.toDataURL();
+    posthog.capture("image_captured");
+    goto("/image");
   }
 </script>
 
@@ -34,7 +34,7 @@
     <button
       class="btn btn-primary mt-8 btn-circle"
       disabled={!canvasElement}
-      on:click={downloadImage}
+      on:click={takeImage}
     >
       <div class="w-6 h-6">
         <FaCamera />
