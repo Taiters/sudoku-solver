@@ -14,28 +14,26 @@
 </script>
 
 {#if $image}
-  <div class="container center flex flex-col h-screen justify-center items-center">
-    <div class="p-2 m-2 border-2 border-base-300 rounded-lg border-dashed">
-      <img src={$image} alt="Captured puzzle" />
-    </div>
-    <div>
-      <button
-        class="btn btn-primary mt-8 mr-2 btn-circle"
-        on:click={() => history.back()}
-      >
-        <div class="w-6 h-6">
-          <FaArrowLeft />
-        </div>
-      </button>
-      <a
-        class="btn btn-primary mt-8 btn-circle"
-        download="sudoku.png"
-        href={$image}
-      >
-        <div class="w-6 h-6">
-          <FaDownload />
-        </div>
-      </a>
-    </div>
+  <div class="p-2 m-2 border-2 border-base-300 rounded-lg border-dashed">
+    <img src={$image} alt="Captured puzzle" />
+  </div>
+  <div>
+    <button
+      class="btn btn-primary mt-8 mr-2 btn-circle"
+      on:click={() => history.back()}
+    >
+      <div class="w-6 h-6">
+        <FaArrowLeft />
+      </div>
+    </button>
+    <a
+      class="btn btn-primary mt-8 btn-circle"
+      download="sudoku.png"
+      href={$image}
+    >
+      <div class="w-6 h-6">
+        <FaDownload />
+      </div>
+    </a>
   </div>
 {/if}

@@ -9,6 +9,7 @@ export const load = async () => {
       { 
         api_host: 'https://eu.i.posthog.com',
         person_profiles: 'identified_only', // or 'always' to create profiles for anonymous users as well
+        persistence: 'localStorage',
       }
     )
   }
