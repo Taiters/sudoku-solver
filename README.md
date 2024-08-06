@@ -1,5 +1,7 @@
 # Visual Sudoku Solver
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/5b36d368-a343-4bde-9089-82340b13dbcc/deploy-status)](https://app.netlify.com/sites/peppy-conkies-97abf2/deploys)
+
 This is the outcome of me wanting to learn a bit about computer vision and machine learning, with the aim of building a visual sudoku solver.
 
 ## How it works
