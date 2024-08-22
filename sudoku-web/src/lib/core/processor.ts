@@ -156,12 +156,14 @@ export class SudokuFrameProcessor {
 
   private convertToBinary(src: Mat) {
     this.cv.cvtColor(src, this.binary, this.cv.COLOR_BGR2GRAY);
-    this.cv.threshold(
+    this.cv.adaptiveThreshold(
       this.binary,
       this.binary,
-      0,
       255,
-      this.cv.THRESH_BINARY_INV + this.cv.THRESH_OTSU,
+      this.cv.ADAPTIVE_THRESH_GAUSSIAN_C,
+      this.cv.THRESH_BINARY_INV,
+      11,
+      10,
     );
   }
 
